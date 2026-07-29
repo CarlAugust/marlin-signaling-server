@@ -1,4 +1,4 @@
-package com.example.filemarlin;
+package com.example.filemarlin.websocket;
 
 import java.util.ArrayList;
 import java.util.Map;
@@ -24,6 +24,7 @@ public class SignalHandler extends TextWebSocketHandler {
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
+
         UUID uuid = UUID.randomUUID();
         String id = uuid.toString();
 
@@ -31,6 +32,7 @@ public class SignalHandler extends TextWebSocketHandler {
         session.getAttributes().put("id", id);
 
         System.out.println("Client connected");
+
     }
 
     @Override

@@ -1,4 +1,4 @@
-package com.example.filemarlin;
+package com.example.filemarlin.websocket;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.socket.config.annotation.EnableWebSocket;

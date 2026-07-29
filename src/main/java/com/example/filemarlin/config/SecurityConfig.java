@@ -1,4 +1,4 @@
-package com.example.filemarlin;
+package com.example.filemarlin.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
