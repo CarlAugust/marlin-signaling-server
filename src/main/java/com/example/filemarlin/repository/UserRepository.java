@@ -1,5 +1,7 @@
 package com.example.filemarlin.repository;
 
+import java.util.Optional;
+
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
@@ -23,7 +25,28 @@ public class UserRepository {
     };
 
     public int save(User user) {
-        String sql = "INSERT INTO users (username, password) VALUES (?, ?)";
+        
+        String sql = "INSERT INTO user (username, password) VALUES (?, ?)";
         return jdbcTemplate.update(sql, user.getUsername(), user.getPassword());
+    }
+
+    public Optional<User> findByUsername(String username) {
+        String sql = "SELECT id, username, password FROM user WHERE username = ?";
+        try {
+            User user = jdbcTemplate.queryForObject(sql, userRowMapper, new Object[]{username});
+            return Optional.of(user);
+        } catch (org.springframework.dao.EmptyResultDataAccessException e) {
+            return Optional.empty();
+        }
+    }
+
+    public Optional<User> findById(String id) {
+        String sql = "SELECT id, username, password FROM user WHERE id = ?";
+        try {
+            User user = jdbcTemplate.queryForObject(sql, userRowMapper, new Object[]{id});
+            return Optional.of(user);
+        } catch (org.springframework.dao.EmptyResultDataAccessException e) {
+            return Optional.empty();
+        }
     }
 }
