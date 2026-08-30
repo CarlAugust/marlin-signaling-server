@@ -28,6 +28,8 @@ public class SignalHandler extends TextWebSocketHandler {
         UUID uuid = UUID.randomUUID();
         String id = uuid.toString();
 
+        System.out.println("Hi and hello welcome to ws" + session.getPrincipal().getName());
+
         clientSessions.put(id, session);
         session.getAttributes().put("id", id);
 
