@@ -23,7 +23,11 @@ public class UserService {
         }
 
         String encodedPassword = passwordEncoder.encode(password);
-        User user = new User(null, username, encodedPassword);
+        User user = new User();
+        user.setPassword(encodedPassword);
+        user.setUsername(username);
+
         userRepository.save(user);
     }
+
 }

@@ -21,8 +21,8 @@ public class App {
     public CommandLineRunner initDatabase(UserRepository userRepository, UserService userService, PasswordEncoder passwordEncoder) {
         return args -> {
             // Check if test user already exists to avoid duplicate entries
-            if (userRepository.findByUsername("user").isEmpty()) {
-                userService.registerUser("user", "password");
+            if (userRepository.findByUsername("admin").isEmpty()) {
+                userService.registerUser("admin", "password");
             }
         };
     }
