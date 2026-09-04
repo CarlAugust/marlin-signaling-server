@@ -30,6 +30,7 @@ public class SignalHandler extends TextWebSocketHandler {
 
         System.out.println("Hi and hello welcome to ws" + session.getPrincipal().getName());
 
+
         clientSessions.put(id, session);
         session.getAttributes().put("id", id);
 
@@ -39,6 +40,11 @@ public class SignalHandler extends TextWebSocketHandler {
 
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
+
+        // Check authentication
+        String token = (String) session.getAttributes().get("token");
+        System.out.println(token);
+
         JsonNode jsonNode = objectMapper.readTree(message.getPayload());
 
         // TODO: Error back to client
