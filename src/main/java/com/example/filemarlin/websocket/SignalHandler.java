@@ -2,9 +2,11 @@ package com.example.filemarlin.websocket;
 
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.jspecify.annotations.NonNull;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
@@ -15,6 +17,12 @@ import tools.jackson.databind.ObjectMapper;
 
 public class SignalHandler extends TextWebSocketHandler {
 
+    /*
+    Note to self
+    Is clientsession nessecary? Rather perhaps it should be replaced by
+    something that stores all clients with the same username that is connected.
+    Such that its possible to see all of them or something.
+     */
     private final Map<String, WebSocketSession> clientSessions = new ConcurrentHashMap<>();
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -23,39 +31,35 @@ public class SignalHandler extends TextWebSocketHandler {
     }
 
     @Override
-    public void afterConnectionEstablished(WebSocketSession session) throws Exception {
+    public void afterConnectionEstablished(@NonNull WebSocketSession session) throws Exception {
 
         UUID uuid = UUID.randomUUID();
-        String id = uuid.toString();
+        String sessionId = uuid.toString();
 
-        System.out.println("Hi and hello welcome to ws" + session.getPrincipal().getName());
+        clientSessions.put(sessionId, session);
+        session.getAttributes().put("sessionId", sessionId);
 
-
-        clientSessions.put(id, session);
-        session.getAttributes().put("id", id);
-
-        System.out.println("Client connected");
-
+        String username = (String) Objects.requireNonNull(session.getPrincipal()).getName();
+        session.getAttributes().put("username", username);
     }
 
     @Override
-    protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
-
-        // Check authentication
-        String token = (String) session.getAttributes().get("token");
-        System.out.println(token);
+    protected void handleTextMessage(@NonNull WebSocketSession session, TextMessage message) throws Exception {
 
         JsonNode jsonNode = objectMapper.readTree(message.getPayload());
 
         // TODO: Error back to client
         try {
-            String targetId = jsonNode.get("targetId").asText();
-            WebSocketSession targetSession = clientSessions.get(targetId);
-            if (targetSession != null && targetSession.isOpen()) {
-                targetSession.sendMessage(message);
-            }
+            /*
+                Grab target and data
+                Then validate data as expected type for target
+            */
+            String targetId = jsonNode.get("targetId").asString();
+            JsonNode data = jsonNode.get("data");
+
+
         } catch (NullPointerException e) {
-            System.err.println("No target ID provided");
+            // Error to client
         }
 
 
@@ -63,7 +67,10 @@ public class SignalHandler extends TextWebSocketHandler {
 
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
-        String id = (String) session.getAttributes().get("id");
-        clientSessions.remove(id);
+        String sessionId = (String) session.getAttributes().get("sessionId");
+        String username = (String) session.getAttributes().get("username");
+
+
+        clientSessions.remove(sessionId);
     }
 }

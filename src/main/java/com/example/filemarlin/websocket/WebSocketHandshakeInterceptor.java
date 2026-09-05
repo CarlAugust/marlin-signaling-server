@@ -8,6 +8,10 @@ import org.springframework.web.socket.server.HandshakeInterceptor;
 
 import java.util.Map;
 
+
+/*
+    This file might not be needed, so just consider it decrapted unless you actully need it CARL
+*/
 public class WebSocketHandshakeInterceptor implements HandshakeInterceptor {
 
     @Override
