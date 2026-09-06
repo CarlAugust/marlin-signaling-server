@@ -1,16 +1,5 @@
 package com.example.filemarlin.websocket;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.web.socket.TextMessage;
-import org.springframework.web.socket.WebSocketSession;
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
-
 import java.security.Principal;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -19,7 +8,21 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.web.socket.TextMessage;
+import org.springframework.web.socket.WebSocketSession;
+
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 /*
     Im just writing some stuff to myself since this was mostly set up with the help of AI
@@ -55,10 +58,15 @@ public class CustomWebSocketHandlerTest {
 
 
     @Test
-    @DisplayName("Should give list of only this connected client")
+    @DisplayName("Should give list of only one connected client to name box cat")
     void handleTextMessageGetClients_Alone() throws Exception {
         WebSocketSession session = createMockSession("box cat");
         handler.afterConnectionEstablished(session);
+
+        // In case other clients gets other names i suppose
+        handler.afterConnectionEstablished(createMockSession("Evilcat"));
+        handler.afterConnectionEstablished(createMockSession("Evilcat"));
+        handler.afterConnectionEstablished(createMockSession("More evil cat"));
 
         String json = objectMapper.writeValueAsString(Map.of("type", "get-clients"));
         TextMessage requestMessage = new TextMessage(json);
