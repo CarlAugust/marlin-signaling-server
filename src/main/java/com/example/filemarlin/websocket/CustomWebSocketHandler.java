@@ -1,6 +1,9 @@
 package com.example.filemarlin.websocket;
 
-import java.util.*;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.jspecify.annotations.NonNull;
@@ -55,22 +58,19 @@ public class CustomWebSocketHandler extends TextWebSocketHandler {
 
             switch (messageType) {
 
-                case "webrtc-signal":
-
-                    break;
-                case "get-clients":
-
+                case "webrtc-signal" -> {
+                    
+                }
+                case "get-clients" -> {
                     String username = (String) session.getAttributes().get("username");
-                    String[] sessions = (String[]) connectedSessionsOnUser.get(username).toArray();
+                    String[] sessions = (String[]) connectedSessionsOnUser.get(username).toArray(new String[0]);
 
                     response = Map.of(
                             "type", "get-clients",
                             "clients", sessions
                     );
-                    
-                    break;
-                default:
-                    response = Map.of(
+                }
+                default -> response = Map.of(
                             "type", "error",
                             "message", "invalid type"
                     );
