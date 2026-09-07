@@ -128,4 +128,34 @@ public class CustomWebSocketHandlerTest {
 
         assertEquals(expectedIds, actualIds);
     }
+
+    @Test
+    @DisplayName("Test sending signal to another client with same username")
+    void handleTextMessageSignal() throws Exception {
+
+        WebSocketSession session1 = createMockSession("box cat");
+        WebSocketSession session2 = createMockSession("box cat");
+        handler.afterConnectionEstablished(session1);
+        handler.afterConnectionEstablished(session2);
+
+        String json = objectMapper.writeValueAsString(Map.of(
+            "type", "webrtc-signal",
+            "data", Map.of(
+                        "targetId", (String) session2.getAttributes().get("sessionId"),
+                        "message", "meow"
+                )
+        ));
+        TextMessage signalMessage = new TextMessage(json);
+
+        handler.handleTextMessage(session1, signalMessage);
+
+        ArgumentCaptor<TextMessage> captor = ArgumentCaptor.forClass(TextMessage.class);
+        verify(session2, times(1)).sendMessage(captor.capture());
+
+        String responseJson = captor.getValue().getPayload();
+        JsonNode responsePayload = objectMapper.readTree(responseJson);
+        assertEquals("webrtc-signal", responsePayload.get("type").asString());
+        assertEquals("meow", responsePayload.get("data").get("message").asString());
+        assertEquals( (String) session2.getAttributes().get("sessionId"), responsePayload.get("data").get("targetId").asString());
+    }
 }

@@ -27,6 +27,10 @@ public class CustomWebSocketHandler extends TextWebSocketHandler {
     private final Map<String, Set<String>> connectedSessionsOnUser = new ConcurrentHashMap<>();
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    private void sendJsonToSession(JsonNode jsonPayload, WebSocketSession session) {
+
+    }
+
     @Override
     public void afterConnectionEstablished(@NonNull WebSocketSession session) throws Exception {
 
@@ -59,7 +63,24 @@ public class CustomWebSocketHandler extends TextWebSocketHandler {
             switch (messageType) {
 
                 case "webrtc-signal" -> {
-                    
+                    JsonNode data = jsonNode.get("data");
+                    String targetId = (String) data.get("targetId").asString();
+
+                    String username = (String) session.getAttributes().get("username");
+                    if (connectedSessionsOnUser.get(username).contains(targetId)) {
+                        response = Map.of(
+                                "type", "webrtc-signal",
+                                "data", data
+                        );
+
+
+                        // I could definitly improve here because im basicly writing same code twice but whatever
+                        // Send to other client and return early
+                        String jsonPayload = objectMapper.writeValueAsString(response);
+                        connectedSessions.get(targetId).sendMessage(new TextMessage(jsonPayload));
+                        return;
+                    }
+
                 }
                 case "get-clients" -> {
                     String username = (String) session.getAttributes().get("username");
