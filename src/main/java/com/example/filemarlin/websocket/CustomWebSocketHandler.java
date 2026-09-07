@@ -27,10 +27,6 @@ public class CustomWebSocketHandler extends TextWebSocketHandler {
     private final Map<String, Set<String>> connectedSessionsOnUser = new ConcurrentHashMap<>();
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    private void sendJsonToSession(JsonNode jsonPayload, WebSocketSession session) {
-
-    }
-
     @Override
     public void afterConnectionEstablished(@NonNull WebSocketSession session) throws Exception {
 
