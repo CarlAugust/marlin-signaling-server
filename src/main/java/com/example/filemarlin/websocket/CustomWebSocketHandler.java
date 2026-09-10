@@ -1,8 +1,10 @@
 package com.example.filemarlin.websocket;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.example.filemarlin.dto.*;
 import org.jspecify.annotations.NonNull;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
@@ -42,6 +44,11 @@ public class CustomWebSocketHandler extends TextWebSocketHandler {
                 .add(sessionId);
     }
 
+    private void sendMessage(WebSocketSession session, Object response) throws IOException {
+        JsonNode jsonPayload = objectMapper.valueToTree(response);
+        session.sendMessage(new TextMessage(objectMapper.writeValueAsString(jsonPayload)));
+    }
+
     @Override
     protected void handleTextMessage(@NonNull WebSocketSession session, TextMessage message) throws Exception {
 
@@ -56,54 +63,41 @@ public class CustomWebSocketHandler extends TextWebSocketHandler {
                 So like it could contain a request ID such that the client can fullfill its own promises
 
             */
+
             JsonNode jsonNode = objectMapper.readTree(message.getPayload());
-            String messageType = jsonNode.get("type").asString();
-            JsonNode clientData = jsonNode.get("client-data");
+            var type = jsonNode.get("type").asString();
 
-            Map<String, Object> response = new HashMap<>();
-            response.put("client-data", clientData);
-
-            switch (messageType) {
+            switch (type) {
 
                 case "webrtc-signal" -> {
-                    String targetId = jsonNode.get("targetId").asString();
+                    var request = objectMapper.treeToValue(jsonNode, SignalWSRequest.class);
 
-                    var username = (String) session.getAttributes().get("username");
-                    if (connectedSessionsOnUser.get(username).contains(targetId)) {
-                        response.put("type", "webrtc-signal");
-                        response.put("senderId", session.getAttributes().get("sessionId"));
-
-                        // I could definitly improve here because im basicly writing same code twice but whatever
-                        // Send to other client and return early
-                        String jsonPayload = objectMapper.writeValueAsString(response);
-                        connectedSessions.get(targetId).sendMessage(new TextMessage(jsonPayload));
+                    var username = session.getAttributes().get("username").toString();
+                    if (connectedSessionsOnUser.get(username).contains(request.targetId())) {
+                        var response = new SignalWSResponse(request.type(), session.getAttributes().get("sessionId").toString(), request.clientData());
+                        sendMessage(connectedSessions.get(request.targetId()), response);
                         return;
                     }
 
                 }
                 case "get-clients" -> {
                     String username = (String) session.getAttributes().get("username");
-                    String[] sessions = connectedSessionsOnUser.get(username).toArray(new String[0]);
+                    String[] clientIds = connectedSessionsOnUser.get(username).toArray(new String[0]);
 
-                    response.put("type", "get-clients");
-                    response.put("clients", sessions);
+                    var request = objectMapper.treeToValue(jsonNode, BasicWSRequest.class);
+                    var response = new GetClientsWSResponse(request.type(), clientIds, request.clientData());
+                    sendMessage(session, response);
 
                 }
                 default -> {
-                    response.put("type", "error");
-                    response.put("message", "invalid type");
+                    var response = new ErrorWSResponse("error", "Invalid type");
+                    sendMessage(session, response);
                 }
             }
 
-            String jsonPayload = objectMapper.writeValueAsString(response);
-            session.sendMessage(new TextMessage(jsonPayload));
-
         } catch (Exception e) {
-            String jsonPayload = objectMapper.writeValueAsString(Map.of(
-                    "type", "error",
-                    "message", "invalid message"
-            ));
-            session.sendMessage(new TextMessage(jsonPayload));
+            var response = new ErrorWSResponse("error", "Invalid Request or Server Error");
+            sendMessage(session, response);
         }
 
 

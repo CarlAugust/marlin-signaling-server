@@ -1,13 +1,13 @@
 package com.example.filemarlin.websocket;
 
 import java.security.Principal;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import com.example.filemarlin.dto.GetClientsWSResponse;
+import com.example.filemarlin.dto.SignalWSResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -111,11 +111,10 @@ public class CustomWebSocketHandlerTest {
         String responseJson = captor.getValue().getPayload();
 
         JsonNode responsePayload = objectMapper.readTree(responseJson);
-        assertEquals("get-clients", responsePayload.get("type").asString());
+        var response = objectMapper.treeToValue(responsePayload, GetClientsWSResponse.class);
 
-        JsonNode clientArray = responsePayload.get("clients");
-        assertTrue(clientArray.isArray());
-        assertEquals(3, clientArray.size());
+        assertEquals("get-clients", response.type());
+        assertEquals(3, response.clients().length);
 
         Set<String> expectedIds = Set.of(
             (String) session1.getAttributes().get("sessionId"),
@@ -123,8 +122,7 @@ public class CustomWebSocketHandlerTest {
             (String) session3.getAttributes().get("sessionId")
         );
 
-        Set<String> actualIds = new HashSet<>();
-        clientArray.forEach(node -> actualIds.add(node.asString()));
+        Set<String> actualIds = new HashSet<>(Arrays.asList(response.clients()));
 
         assertEquals(expectedIds, actualIds);
     }
@@ -141,7 +139,7 @@ public class CustomWebSocketHandlerTest {
         String json = objectMapper.writeValueAsString(Map.of(
                 "type", "webrtc-signal",
                 "targetId", (String) session2.getAttributes().get("sessionId"),
-                "client-data", Map.of(
+                "clientData", Map.of(
                         "message", "meow"
                 )
         ));
@@ -155,13 +153,12 @@ public class CustomWebSocketHandlerTest {
 
         String responseJson = captor.getValue().getPayload();
         JsonNode responsePayload = objectMapper.readTree(responseJson);
-        assertTrue(responsePayload.has("type"));
-        assertTrue(responsePayload.has("client-data"));
-        assertTrue(responsePayload.get("client-data").has("message"));
-        assertTrue(responsePayload.has("senderId"));
+        var response = objectMapper.treeToValue(responsePayload, SignalWSResponse.class);
 
-        assertEquals("webrtc-signal", responsePayload.get("type").asString());
-        assertEquals("meow", responsePayload.get("client-data").get("message").asString());
-        assertEquals( (String) session1.getAttributes().get("sessionId"), responsePayload.get("senderId").asString());
+        assertTrue(response.clientData().has("message"));
+
+        assertEquals("webrtc-signal", response.type());
+        assertEquals("meow", response.clientData().get("message").asString());
+        assertEquals( (String) session1.getAttributes().get("sessionId"), response.senderId());
     }
 }
