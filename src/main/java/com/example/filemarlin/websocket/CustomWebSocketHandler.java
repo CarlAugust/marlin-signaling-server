@@ -1,9 +1,6 @@
 package com.example.filemarlin.websocket;
 
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.jspecify.annotations.NonNull;
@@ -37,7 +34,7 @@ public class CustomWebSocketHandler extends TextWebSocketHandler {
         connectedSessions.put(sessionId, session);
         session.getAttributes().put("sessionId", sessionId);
 
-        String username = (String) Objects.requireNonNull(session.getPrincipal()).getName();
+        String username = Objects.requireNonNull(session.getPrincipal()).getName();
         session.getAttributes().put("username", username);
 
         connectedSessionsOnUser
@@ -50,26 +47,31 @@ public class CustomWebSocketHandler extends TextWebSocketHandler {
 
         try {
             /*
-                Grab target and data
-                Then validate data as expected type for target
+
+                The expected format for all requests is
+                type and data
+                type is the specific thing you want to do
+                data is just some data that only clients care about that the server
+                passes along
+                So like it could contain a request ID such that the client can fullfill its own promises
+
             */
             JsonNode jsonNode = objectMapper.readTree(message.getPayload());
             String messageType = jsonNode.get("type").asString();
-            Map<String, Object> response = Map.of();
+            JsonNode clientData = jsonNode.get("client-data");
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("client-data", clientData);
 
             switch (messageType) {
 
                 case "webrtc-signal" -> {
-                    JsonNode data = jsonNode.get("data");
-                    String targetId = (String) data.get("targetId").asString();
+                    String targetId = jsonNode.get("targetId").asString();
 
-                    String username = (String) session.getAttributes().get("username");
+                    var username = (String) session.getAttributes().get("username");
                     if (connectedSessionsOnUser.get(username).contains(targetId)) {
-                        response = Map.of(
-                                "type", "webrtc-signal",
-                                "data", data
-                        );
-
+                        response.put("type", "webrtc-signal");
+                        response.put("senderId", session.getAttributes().get("sessionId"));
 
                         // I could definitly improve here because im basicly writing same code twice but whatever
                         // Send to other client and return early
@@ -81,22 +83,20 @@ public class CustomWebSocketHandler extends TextWebSocketHandler {
                 }
                 case "get-clients" -> {
                     String username = (String) session.getAttributes().get("username");
-                    String[] sessions = (String[]) connectedSessionsOnUser.get(username).toArray(new String[0]);
+                    String[] sessions = connectedSessionsOnUser.get(username).toArray(new String[0]);
 
-                    response = Map.of(
-                            "type", "get-clients",
-                            "clients", sessions
-                    );
+                    response.put("type", "get-clients");
+                    response.put("clients", sessions);
+
                 }
-                default -> response = Map.of(
-                            "type", "error",
-                            "message", "invalid type"
-                    );
+                default -> {
+                    response.put("type", "error");
+                    response.put("message", "invalid type");
+                }
             }
 
             String jsonPayload = objectMapper.writeValueAsString(response);
             session.sendMessage(new TextMessage(jsonPayload));
-
 
         } catch (Exception e) {
             String jsonPayload = objectMapper.writeValueAsString(Map.of(

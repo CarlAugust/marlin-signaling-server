@@ -139,12 +139,13 @@ public class CustomWebSocketHandlerTest {
         handler.afterConnectionEstablished(session2);
 
         String json = objectMapper.writeValueAsString(Map.of(
-            "type", "webrtc-signal",
-            "data", Map.of(
-                        "targetId", (String) session2.getAttributes().get("sessionId"),
+                "type", "webrtc-signal",
+                "targetId", (String) session2.getAttributes().get("sessionId"),
+                "client-data", Map.of(
                         "message", "meow"
                 )
         ));
+
         TextMessage signalMessage = new TextMessage(json);
 
         handler.handleTextMessage(session1, signalMessage);
@@ -154,8 +155,13 @@ public class CustomWebSocketHandlerTest {
 
         String responseJson = captor.getValue().getPayload();
         JsonNode responsePayload = objectMapper.readTree(responseJson);
+        assertTrue(responsePayload.has("type"));
+        assertTrue(responsePayload.has("client-data"));
+        assertTrue(responsePayload.get("client-data").has("message"));
+        assertTrue(responsePayload.has("senderId"));
+
         assertEquals("webrtc-signal", responsePayload.get("type").asString());
-        assertEquals("meow", responsePayload.get("data").get("message").asString());
-        assertEquals( (String) session2.getAttributes().get("sessionId"), responsePayload.get("data").get("targetId").asString());
+        assertEquals("meow", responsePayload.get("client-data").get("message").asString());
+        assertEquals( (String) session1.getAttributes().get("sessionId"), responsePayload.get("senderId").asString());
     }
 }
