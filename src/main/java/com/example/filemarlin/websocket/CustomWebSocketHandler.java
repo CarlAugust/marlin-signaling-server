@@ -12,6 +12,7 @@ import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
+import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
@@ -97,8 +98,12 @@ public class CustomWebSocketHandler extends TextWebSocketHandler {
             session.sendMessage(new TextMessage(jsonPayload));
 
 
-        } catch (NullPointerException e) {
-            // Error to client
+        } catch (Exception e) {
+            String jsonPayload = objectMapper.writeValueAsString(Map.of(
+                    "type", "error",
+                    "message", "invalid message"
+            ));
+            session.sendMessage(new TextMessage(jsonPayload));
         }
 
 
