@@ -1,4 +1,6 @@
 package com.example.filemarlin.dto;
 
-public record ErrorWSResponse(String type, String message) {
+import tools.jackson.databind.JsonNode;
+
+public record ErrorWSResponse(String type, String message, JsonNode clientData) {
 }

@@ -77,6 +77,9 @@ public class CustomWebSocketHandler extends TextWebSocketHandler {
                         var response = new SignalWSResponse(request.type(), session.getAttributes().get("sessionId").toString(), request.clientData());
                         sendMessage(connectedSessions.get(request.targetId()), response);
                         return;
+                    } else {
+                        var response = new ErrorWSResponse(request.type(), "Couldnt find client", request.clientData());
+                        sendMessage(session, response);
                     }
 
                 }
@@ -90,13 +93,14 @@ public class CustomWebSocketHandler extends TextWebSocketHandler {
 
                 }
                 default -> {
-                    var response = new ErrorWSResponse("error", "Invalid type");
+                    var clientData = jsonNode.has("clientData") ? jsonNode.get("clientData") : null;
+                    var response = new ErrorWSResponse("error", "Invalid type", clientData);
                     sendMessage(session, response);
                 }
             }
 
         } catch (Exception e) {
-            var response = new ErrorWSResponse("error", "Invalid Request or Server Error");
+            var response = new ErrorWSResponse("error", "Invalid Request or Server Error", null);
             sendMessage(session, response);
         }
 
