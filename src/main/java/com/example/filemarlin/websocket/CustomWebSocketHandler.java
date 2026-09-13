@@ -78,7 +78,7 @@ public class CustomWebSocketHandler extends TextWebSocketHandler {
                         sendMessage(connectedSessions.get(request.targetId()), response);
                         return;
                     } else {
-                        var response = new ErrorWSResponse(request.type(), "Couldnt find client", request.clientData());
+                        var response = new ErrorWSResponse("error", "Couldnt find client", request.clientData());
                         sendMessage(session, response);
                     }
 
